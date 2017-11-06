@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SpeedCamPrometheusBridge.iml" filepath="$PROJECT_DIR$/.idea/modules/SpeedCamPrometheusBridge.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SpeedCamPrometheusBridge_main.iml" filepath="$PROJECT_DIR$/.idea/modules/SpeedCamPrometheusBridge_main.iml" group="SpeedCamPrometheusBridge" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SpeedCamPrometheusBridge_test.iml" filepath="$PROJECT_DIR$/.idea/modules/SpeedCamPrometheusBridge_test.iml" group="SpeedCamPrometheusBridge" />
+    </modules>
+  </component>
+</project>
