@@ -14,7 +14,7 @@ dependencies {
     // JSON Library
     compile group: 'com.owlike', name: 'genson', version: '1.4'
     // REST Library
-    compile group: 'com.sparkjava', name: 'sparke-core', version: '2.7.0'
+    compile group: 'com.sparkjava', name: 'spark-core', version: '2.7.0'
 }
 
 jar {
