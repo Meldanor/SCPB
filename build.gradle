@@ -11,7 +11,12 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    // JSON Library
+    compile group: 'com.owlike', name: 'genson', version: '1.4'
+    // REST Library
+    compile group: 'com.sparkjava', name: 'sparke-core', version: '2.7.0'
 }
+
 jar {
     from {
         (configurations.runtime).collect {

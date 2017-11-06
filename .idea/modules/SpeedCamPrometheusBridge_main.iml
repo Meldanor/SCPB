@@ -9,5 +9,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Gradle: com.owlike:genson:1.4" level="project" />
+    <orderEntry type="library" name="Gradle: com.sparkjava:sparke-core:2.7.0" level="project" />
   </component>
 </module>
