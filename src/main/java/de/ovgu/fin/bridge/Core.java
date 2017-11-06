@@ -4,6 +4,9 @@ import spark.Spark;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 06.11.2017.
@@ -12,32 +15,50 @@ public class Core {
 
     public static void main(String[] args) throws Exception {
         if (args.length <= 0) {
-            System.out.println("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_CONFIG] (PORT)");
+            System.out.println("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_CONFIG] [AS 1-7 IPv4] (PORT)");
             return;
         }
         String path = args[0];
+        String as17ipv4 = args[1];
         int port = 7536;
-        if (args.length == 2) {
-            port = Integer.parseInt(args[1]);
+        if (args.length == 3) {
+            port = Integer.parseInt(args[2]);
         }
-        new Core(path).start(port);
+        new Core(path, as17ipv4).start(port);
     }
 
-    private final String configFilePath;
+    private ConfigurationUpdater configurationUpdater;
 
-    private Core(String configFilePath) throws Exception {
-        if (!new File(configFilePath).exists())
+    private Core(String configFilePath, String as17ipv4) throws Exception {
+        if (!new File(configFilePath).exists()) {
             throw new IOException("Prometheus config file at '" + configFilePath + "' not found!");
-        this.configFilePath = configFilePath;
-
+        }
+        System.out.println("Config file of Prometheus: " + configFilePath);
+        System.out.println("IPv4 of AS 1-7: " + as17ipv4);
+        this.configurationUpdater = new ConfigurationUpdater(configFilePath, as17ipv4);
     }
 
-    private void start(int port) {
-        System.out.println("Config file of Prometheus: " + configFilePath);
+    private void start(int port) throws Exception {
 
+        startUpdaterThread();
         startRestService(port);
 
+        // Write current port numbers at shutdown
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                configurationUpdater.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }, "Shutdown-thread"));
+
         System.out.println("SpeedCam Prometheus Bridge started!");
+    }
+
+    private void startUpdaterThread() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(this.configurationUpdater, 0, 30, TimeUnit.SECONDS);
+        System.out.println("Started configuration update scheduler");
     }
 
     private void startRestService(int port) {
@@ -49,7 +70,11 @@ public class Core {
 
     private void registerRestResources() {
         Spark.put("/registerClient/:port", (request, response) -> {
-            response.status(200);
+            int newPort = Integer.parseInt(request.params("port"));
+            if (configurationUpdater.registerNewPortNumber(newPort))
+                response.status(200);
+            else
+                response.status(304);
             return "";
         });
     }
