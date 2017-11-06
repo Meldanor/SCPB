@@ -26,10 +26,12 @@ public class ConfigurationUpdater implements Runnable, Closeable {
 
     private Set<Integer> portNumbers = new HashSet<>();
     private BlockingQueue<Integer> newPortNumbers = new LinkedBlockingQueue<>();
+    private PrometheusProcess prometheusProcess;
 
-    ConfigurationUpdater(String configFilePath, String as17ipv4) {
+    ConfigurationUpdater(String configFilePath, String as17ipv4, PrometheusProcess prometheusProcess) {
         this.configFilePath = new File(configFilePath).toPath();
         this.as17ipv4 = as17ipv4;
+        this.prometheusProcess = prometheusProcess;
     }
 
     @Override
@@ -53,6 +55,13 @@ public class ConfigurationUpdater implements Runnable, Closeable {
     }
 
     private void updateConfigurationFile(List<Integer> copyPortNumbers) {
+        System.out.println("Stopping prometheus...");
+        try {
+            prometheusProcess.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Can't stop prometheus: " + copyPortNumbers);
+        }
         System.out.println("Adding port numbers: " + copyPortNumbers);
         try (BufferedWriter writer = Files.newBufferedWriter(configFilePath, StandardOpenOption.APPEND)) {
             for (Integer portNumber : copyPortNumbers) {
@@ -69,6 +78,14 @@ public class ConfigurationUpdater implements Runnable, Closeable {
             System.err.println("Can't write port numbers: " + copyPortNumbers);
             e.printStackTrace();
         }
+        System.out.println("Restarting prometheus...");
+        try {
+            prometheusProcess.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Can't stop prometheus: " + copyPortNumbers);
+        }
+        System.out.println("Prometheus restarted!");
     }
 
     @Override

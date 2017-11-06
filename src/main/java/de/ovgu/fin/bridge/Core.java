@@ -15,7 +15,7 @@ public class Core {
 
     public static void main(String[] args) throws Exception {
         if (args.length <= 0) {
-            System.out.println("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_CONFIG] [AS 1-7 IPv4] (PORT)");
+            System.out.println("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_DIR] [AS 1-7 IPv4] (PORT)");
             return;
         }
         String path = args[0];
@@ -28,31 +28,43 @@ public class Core {
     }
 
     private ConfigurationUpdater configurationUpdater;
+    private PrometheusProcess prometheusProcess;
 
-    private Core(String configFilePath, String as17ipv4) throws Exception {
+    private Core(String prometheusDir, String as17ipv4) throws Exception {
+        String configFilePath = new File(prometheusDir, "prometheus.yml").getPath();
         if (!new File(configFilePath).exists()) {
             throw new IOException("Prometheus config file at '" + configFilePath + "' not found!");
         }
         System.out.println("Config file of Prometheus: " + configFilePath);
         System.out.println("IPv4 of AS 1-7: " + as17ipv4);
-        this.configurationUpdater = new ConfigurationUpdater(configFilePath, as17ipv4);
+        this.prometheusProcess = new PrometheusProcess(prometheusDir);
+        this.configurationUpdater = new ConfigurationUpdater(configFilePath, as17ipv4, prometheusProcess);
+
     }
 
     private void start(int port) throws Exception {
 
         startUpdaterThread();
+        startPrometheus();
         startRestService(port);
 
         // Write current port numbers at shutdown
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 configurationUpdater.close();
-            } catch (IOException e) {
+                prometheusProcess.stop();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }, "Shutdown-thread"));
 
         System.out.println("SpeedCam Prometheus Bridge started!");
+    }
+
+    private void startPrometheus() throws Exception {
+        System.out.println("Starting prometheus ...");
+        this.prometheusProcess.start();
+        System.out.println("Prometheus started!");
     }
 
     private void startUpdaterThread() {
