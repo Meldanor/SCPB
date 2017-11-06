@@ -90,6 +90,9 @@ public class ConfigurationUpdater implements Runnable, Closeable {
 
     @Override
     public void close() throws IOException {
-        updateConfigurationFile(new ArrayList<>(newPortNumbers));
+        if (!newPortNumbers.isEmpty()) {
+            System.out.println("Flush memory...!");
+            updateConfigurationFile(new ArrayList<>(newPortNumbers));
+        }
     }
 }

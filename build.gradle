@@ -25,6 +25,6 @@ jar {
         }
     }
     manifest {
-        attributes("Main-Class": "de.meldanor.Core")
+        attributes("Main-Class": "de.ovgu.fin.bridge.Core")
     }
 }
