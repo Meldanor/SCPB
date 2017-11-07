@@ -1,9 +1,12 @@
 package de.ovgu.fin.bridge;
 
+import com.owlike.genson.Genson;
 import spark.Spark;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -80,6 +83,7 @@ public class Core {
         System.out.println("REST service started at port " + port);
     }
 
+    @SuppressWarnings("unchecked")
     private void registerRestResources() {
         Spark.put("/registerClient/:port", (request, response) -> {
             int newPort = Integer.parseInt(request.params("port"));
@@ -87,6 +91,24 @@ public class Core {
                 response.status(200);
             else
                 response.status(304);
+            return "";
+        });
+
+        final Genson genson = new Genson();
+
+        Spark.post("/registerClient/", (request, response) -> {
+
+            Map<String, Object> map = genson.deserialize(request.bodyAsBytes(), Map.class);
+            if (!map.containsKey("ports")) {
+                response.status(400);
+                return "Missing 'ports' elements in body!";
+            }
+            List<Long> newPorts = (List<Long>) map.get("ports");
+
+            for (Long newPort : newPorts) {
+                configurationUpdater.registerNewPortNumber(newPort.intValue());
+            }
+            response.status(200);
             return "";
         });
     }
