@@ -1,6 +1,9 @@
 package de.ovgu.fin.bridge;
 
 import java.io.File;
+import java.time.Duration;
+import java.time.LocalTime;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 06.11.2017.
@@ -19,7 +22,7 @@ class PrometheusProcess {
             return;
         ProcessBuilder builder = new ProcessBuilder()
                 .directory(new File(prometheusDir))
-                .command(prometheusDir+"/prometheus", "-config.file=prometheus.yml");
+                .command(prometheusDir + "/prometheus", "-config.file=prometheus.yml");
 
         this.holder = builder.start();
     }
@@ -29,6 +32,11 @@ class PrometheusProcess {
             return;
 
         this.holder.destroy();
+        LocalTime start = LocalTime.now();
+        System.out.println("Waiting for prometheus to stop (max 5 sec)...");
+        this.holder.waitFor(5, TimeUnit.SECONDS);
+
+        System.out.println("Waited for prometheus shutdown: " + Duration.between(start, LocalTime.now()).getSeconds() + "s");
         this.holder = null;
     }
 
