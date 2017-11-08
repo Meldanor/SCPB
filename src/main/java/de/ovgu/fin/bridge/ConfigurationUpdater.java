@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created on 06.11.2017.
@@ -24,14 +27,38 @@ public class ConfigurationUpdater implements Runnable, Closeable {
     private final Path configFilePath;
     private final String as17ipv4;
 
-    private Set<Integer> portNumbers = new HashSet<>();
+    private Set<Integer> portNumbers;
     private BlockingQueue<Integer> newPortNumbers = new LinkedBlockingQueue<>();
     private PrometheusProcess prometheusProcess;
 
-    ConfigurationUpdater(String configFilePath, String as17ipv4, PrometheusProcess prometheusProcess) {
+    ConfigurationUpdater(String configFilePath, String as17ipv4, PrometheusProcess prometheusProcess) throws IOException {
         this.configFilePath = new File(configFilePath).toPath();
         this.as17ipv4 = as17ipv4;
         this.prometheusProcess = prometheusProcess;
+        this.portNumbers = new HashSet<>(parseKnownPortNumbers());
+
+        System.out.println("Monitoring ports: " + portNumbers);
+    }
+
+    private List<Integer> parseKnownPortNumbers() throws IOException {
+
+        return Files.lines(configFilePath)
+                .filter(s -> s.contains("- targets:"))
+                .map(this::parseKnownPortNumbers)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    private List<Integer> parseKnownPortNumbers(String yamlConfigEntry) {
+        Pattern portPattern = Pattern.compile("(\\d+)'");
+        Matcher matcher = portPattern.matcher(yamlConfigEntry);
+        List<Integer> ports = new ArrayList<>();
+        while (matcher.find()) {
+            String portMatch = matcher.group(1);
+            ports.add(Integer.parseInt(portMatch));
+        }
+
+        return ports;
     }
 
     @Override
