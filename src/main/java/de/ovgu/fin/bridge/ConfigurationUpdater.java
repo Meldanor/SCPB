@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
@@ -37,7 +34,8 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         this.prometheusProcess = prometheusProcess;
         this.portNumbers = new HashSet<>(parseKnownPortNumbers());
 
-        System.out.println("Monitoring ports: " + portNumbers);
+        // TreeSet => Sorted output
+        System.out.println("Monitoring ports: " + new TreeSet<>(portNumbers));
     }
 
     private List<Integer> parseKnownPortNumbers() throws IOException {
@@ -55,7 +53,8 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         List<Integer> ports = new ArrayList<>();
         while (matcher.find()) {
             String portMatch = matcher.group(1);
-            ports.add(Integer.parseInt(portMatch));
+            int port = Integer.parseInt(portMatch);
+            ports.add(port);
         }
 
         return ports;
