@@ -14,6 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static de.ovgu.fin.bridge.Core.LOGGER;
+
 /**
  * Created on 06.11.2017.
  */
@@ -35,7 +37,7 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         this.portNumbers = new HashSet<>(parseKnownPortNumbers());
 
         // TreeSet => Sorted output
-        System.out.println("Monitoring ports: " + new TreeSet<>(portNumbers));
+        LOGGER.info("Monitoring ports: " + new TreeSet<>(portNumbers));
     }
 
     private List<Integer> parseKnownPortNumbers() throws IOException {
@@ -81,14 +83,14 @@ public class ConfigurationUpdater implements Runnable, Closeable {
     }
 
     private void updateConfigurationFile(List<Integer> copyPortNumbers) {
-        System.out.println("Stopping prometheus...");
+        LOGGER.info("Stopping prometheus...");
         try {
             prometheusProcess.stop();
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Can't stop prometheus: " + copyPortNumbers);
+            LOGGER.error("Can't stop prometheus: " + copyPortNumbers, e);
         }
-        System.out.println("Adding port numbers: " + copyPortNumbers);
+        LOGGER.info("Adding port numbers: " + copyPortNumbers);
         try (BufferedWriter writer = Files.newBufferedWriter(configFilePath, StandardOpenOption.APPEND)) {
             for (Integer portNumber : copyPortNumbers) {
                 writer.newLine();
@@ -101,23 +103,23 @@ public class ConfigurationUpdater implements Runnable, Closeable {
             }
 
         } catch (Exception e) {
-            System.err.println("Can't write port numbers: " + copyPortNumbers);
+            LOGGER.error("Can't write port numbers: " + copyPortNumbers);
             e.printStackTrace();
         }
-        System.out.println("Restarting prometheus...");
+        LOGGER.info("Restarting prometheus...");
         try {
             prometheusProcess.start();
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Can't stop prometheus: " + copyPortNumbers);
+            LOGGER.error("Can't stop prometheus: " + copyPortNumbers, e);
         }
-        System.out.println("Prometheus restarted!");
+        LOGGER.info("Prometheus restarted!");
     }
 
     @Override
     public void close() throws IOException {
         if (!newPortNumbers.isEmpty()) {
-            System.out.println("Flush memory...!");
+            LOGGER.info("Flush memory...!");
             updateConfigurationFile(new ArrayList<>(newPortNumbers));
         }
     }

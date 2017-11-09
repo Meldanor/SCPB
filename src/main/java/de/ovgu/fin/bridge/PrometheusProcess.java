@@ -5,6 +5,8 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
 
+import static de.ovgu.fin.bridge.Core.LOGGER;
+
 /**
  * Created on 06.11.2017.
  */
@@ -33,10 +35,9 @@ class PrometheusProcess {
 
         this.holder.destroy();
         LocalTime start = LocalTime.now();
-        System.out.println("Waiting for prometheus to stop (max 5 sec)...");
+        LOGGER.info("Waiting for prometheus to stop (max 5 sec)...");
         this.holder.waitFor(5, TimeUnit.SECONDS);
-
-        System.out.println("Waited for prometheus shutdown: " + Duration.between(start, LocalTime.now()).getSeconds() + "s");
+        LOGGER.info("Waited for prometheus shutdown: " + Duration.between(start, LocalTime.now()).getSeconds() + "s");
         this.holder = null;
     }
 
