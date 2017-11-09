@@ -24,8 +24,8 @@ class PrometheusProcess {
             return;
         ProcessBuilder builder = new ProcessBuilder()
                 .directory(new File(prometheusDir))
+                .inheritIO()
                 .command(prometheusDir + "/prometheus", "-config.file=prometheus.yml");
-
         this.holder = builder.start();
     }
 
