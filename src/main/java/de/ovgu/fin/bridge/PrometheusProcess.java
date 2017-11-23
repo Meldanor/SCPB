@@ -17,6 +17,8 @@ class PrometheusProcess {
     private static final String CONFIG_FILE_PROMETHEUS_YML = "-config.file=prometheus.yml";
     private static final String WEB_ENABLE_REMOTE_SHUTDOWN = "-web.enable-remote-shutdown";
     private static final String PROMETHEUS_SHUTDOWN_URL = "http://localhost:9090/-/quit";
+    // Retention time for 90 days.
+    private static final String STORAGE_RETENTION = "-storage.local.retention=2160h";
 
     private Process holder;
 
@@ -32,7 +34,7 @@ class PrometheusProcess {
         ProcessBuilder builder = new ProcessBuilder()
                 .directory(new File(prometheusDir))
                 .inheritIO()
-                .command(prometheusDir + "/prometheus", CONFIG_FILE_PROMETHEUS_YML, WEB_ENABLE_REMOTE_SHUTDOWN);
+                .command(prometheusDir + "/prometheus", CONFIG_FILE_PROMETHEUS_YML, WEB_ENABLE_REMOTE_SHUTDOWN, STORAGE_RETENTION);
         this.holder = builder.start();
     }
 
