@@ -17,15 +17,15 @@ class PrometheusProcess {
     private static final String CONFIG_FILE_PROMETHEUS_YML = "-config.file=prometheus.yml";
     private static final String WEB_ENABLE_REMOTE_SHUTDOWN = "-web.enable-remote-shutdown";
     private static final String PROMETHEUS_SHUTDOWN_URL = "http://localhost:9090/-/quit";
-    // Retention time for 90 days.
-    private static final String STORAGE_RETENTION = "-storage.local.retention=2160h";
 
     private Process holder;
 
     private final String prometheusDir;
+    private final Duration retentionTime;
 
-    PrometheusProcess(String prometheusDir) {
+    PrometheusProcess(String prometheusDir, Duration retentionTime) {
         this.prometheusDir = prometheusDir;
+        this.retentionTime = retentionTime;
     }
 
     void start() throws Exception {
@@ -34,7 +34,8 @@ class PrometheusProcess {
         ProcessBuilder builder = new ProcessBuilder()
                 .directory(new File(prometheusDir))
                 .inheritIO()
-                .command(prometheusDir + "/prometheus", CONFIG_FILE_PROMETHEUS_YML, WEB_ENABLE_REMOTE_SHUTDOWN, STORAGE_RETENTION);
+                .command(prometheusDir + "/prometheus", CONFIG_FILE_PROMETHEUS_YML, WEB_ENABLE_REMOTE_SHUTDOWN, retentionTimeFlag());
+        LOGGER.info("Prometheus flags: " + builder.command());
         this.holder = builder.start();
     }
 
@@ -56,5 +57,12 @@ class PrometheusProcess {
 
     private boolean isRunning() {
         return this.holder != null;
+    }
+
+    private String retentionTimeFlag() {
+        long hours = retentionTime.toHours();
+        long minutes = retentionTime.minusHours(hours).toMinutes();
+        long seconds = retentionTime.minusHours(hours).minusMinutes(minutes).getSeconds();
+        return "-storage.local.retention=" + hours + "h" + minutes + "m" + seconds + "s";
     }
 }

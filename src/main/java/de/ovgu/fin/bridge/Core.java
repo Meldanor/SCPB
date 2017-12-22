@@ -7,6 +7,7 @@ import spark.Spark;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -20,6 +21,7 @@ public class Core {
 
     static final Logger LOGGER = LoggerFactory.getLogger("SCPB");
 
+
     public static void main(String[] args) throws Exception {
         if (args.length <= 0) {
             LOGGER.error("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_DIR] [AS 1-7 IPv4] (PORT)");
@@ -28,19 +30,23 @@ public class Core {
         String path = args[0];
         String as17ipv4 = args[1];
         int port = 7536;
-        if (args.length == 3) {
+        Duration retentionTime = Duration.ofDays(90);
+        if (args.length >= 3) {
             port = Integer.parseInt(args[2]);
+        }
+        if (args.length >= 4) {
+            retentionTime = Duration.parse("PT" + args[3]);
         }
 
         LOGGER.info("Starting SCPB!");
 
-        new Core(path, as17ipv4).start(port);
+        new Core(path, as17ipv4, retentionTime).start(port);
     }
 
     private ConfigurationUpdater configurationUpdater;
     private PrometheusProcess prometheusProcess;
 
-    private Core(String prometheusDir, String as17ipv4) throws Exception {
+    private Core(String prometheusDir, String as17ipv4, Duration retentionTime) throws Exception {
         String configFilePath = new File(prometheusDir, "prometheus.yml").getPath();
         if (!new File(configFilePath).exists()) {
             throw new IOException("Prometheus config file at '" + configFilePath + "' not found!");
@@ -48,7 +54,7 @@ public class Core {
 
         LOGGER.info("Config file of Prometheus: " + configFilePath);
         LOGGER.info("IPv4 of AS 1-7: " + as17ipv4);
-        this.prometheusProcess = new PrometheusProcess(prometheusDir);
+        this.prometheusProcess = new PrometheusProcess(prometheusDir, retentionTime);
         this.configurationUpdater = new ConfigurationUpdater(configFilePath, as17ipv4, prometheusProcess);
 
     }
