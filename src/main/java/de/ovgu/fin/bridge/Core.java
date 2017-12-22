@@ -45,6 +45,9 @@ public class Core {
 
     private ConfigurationUpdater configurationUpdater;
     private PrometheusProcess prometheusProcess;
+    private PrometheusHeartbeatCheck prometheusHeartbeatCheck;
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     private Core(String prometheusDir, String as17ipv4, Duration retentionTime) throws Exception {
         String configFilePath = new File(prometheusDir, "prometheus.yml").getPath();
@@ -55,6 +58,7 @@ public class Core {
         LOGGER.info("Config file of Prometheus: " + configFilePath);
         LOGGER.info("IPv4 of AS 1-7: " + as17ipv4);
         this.prometheusProcess = new PrometheusProcess(prometheusDir, retentionTime);
+        this.prometheusHeartbeatCheck = new PrometheusHeartbeatCheck(prometheusProcess);
         this.configurationUpdater = new ConfigurationUpdater(configFilePath, as17ipv4, prometheusProcess);
 
     }
@@ -70,6 +74,7 @@ public class Core {
             try {
                 configurationUpdater.close();
                 prometheusProcess.stop();
+                scheduler.shutdown();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -82,10 +87,12 @@ public class Core {
         LOGGER.info("Starting prometheus ...");
         this.prometheusProcess.start();
         LOGGER.info("Prometheus started!");
+
+        scheduler.scheduleAtFixedRate(this.prometheusHeartbeatCheck, 0, 5, TimeUnit.SECONDS);
+        LOGGER.info("Prometheus heartbeat checker started!");
     }
 
     private void startUpdaterThread() {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(this.configurationUpdater, 0, 5, TimeUnit.SECONDS);
         LOGGER.info("Started configuration update scheduler with interval 5s");
     }

@@ -1,6 +1,7 @@
 package de.ovgu.fin.bridge;
 
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.io.File;
 import java.time.Duration;
@@ -45,7 +46,14 @@ class PrometheusProcess {
 
         LocalTime start = LocalTime.now();
         LOGGER.info("Waiting for prometheus to stop (max 5 sec)...");
-        sendShutdownToPrometheus();
+        try {
+            sendShutdownToPrometheus();
+        } catch (UnirestException e) {
+            if (e.getMessage().contains("Connection refused")) {
+                LOGGER.warn("Prometheus was not running!");
+            } else
+                throw e;
+        }
         this.holder.waitFor(5, TimeUnit.SECONDS);
         LOGGER.info("Waited for prometheus shutdown: " + Duration.between(start, LocalTime.now()).getSeconds() + "s");
         this.holder = null;
@@ -55,8 +63,8 @@ class PrometheusProcess {
         Unirest.post(PROMETHEUS_SHUTDOWN_URL).asString().getStatus();
     }
 
-    private boolean isRunning() {
-        return this.holder != null;
+    boolean isRunning() {
+        return this.holder != null && this.holder.isAlive();
     }
 
     private String retentionTimeFlag() {
