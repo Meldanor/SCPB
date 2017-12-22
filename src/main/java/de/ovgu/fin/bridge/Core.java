@@ -88,7 +88,7 @@ public class Core {
         this.prometheusProcess.start();
         LOGGER.info("Prometheus started!");
 
-        scheduler.scheduleAtFixedRate(this.prometheusHeartbeatCheck, 0, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this.prometheusHeartbeatCheck, TimeUnit.MINUTES.toSeconds(1L), 5, TimeUnit.SECONDS);
         LOGGER.info("Prometheus heartbeat checker started!");
     }
 

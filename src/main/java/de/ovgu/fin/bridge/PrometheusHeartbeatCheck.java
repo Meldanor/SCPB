@@ -22,7 +22,7 @@ public class PrometheusHeartbeatCheck implements Runnable {
 
         if (prometheusProcess.isRunning()) {
             // if there was a checktime and it was passed , reset the checkTime
-            if (checkTime != null && checkTime.isAfter(LocalDateTime.now())) {
+            if (checkTime != null && LocalDateTime.now().isAfter(checkTime)) {
                 Core.LOGGER.warn("Prometheus server was down, but was normally restarted.");
                 checkTime = null;
             }
