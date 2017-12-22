@@ -64,7 +64,6 @@ class PrometheusProcess {
     }
 
     boolean isRunning() {
-        Core.LOGGER.info(this.holder + " " + (this.holder != null ? this.holder.isAlive() : ""));
         return this.holder != null && this.holder.isAlive();
     }
 
