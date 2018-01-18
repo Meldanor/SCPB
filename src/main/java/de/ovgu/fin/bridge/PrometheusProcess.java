@@ -15,9 +15,11 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
  */
 class PrometheusProcess {
 
-    private static final String CONFIG_FILE_PROMETHEUS_YML = "-config.file=prometheus.yml";
-    private static final String WEB_ENABLE_REMOTE_SHUTDOWN = "-web.enable-remote-shutdown";
+    private static final String CONFIG_FILE_PROMETHEUS_YML = "--config.file=prometheus.yml";
+    private static final String WEB_ENABLE_REMOTE_SHUTDOWN = "--web.enable-lifecycle";
     private static final String PROMETHEUS_SHUTDOWN_URL = "http://localhost:9090/-/quit";
+    private static final String PROMETHEUS_RELOAD_URL = "http://localhost:9090/-/reload";
+    private static final String STORAGE_RETENTION_FLAG_PREFIX = "--storage.tsdb.retention=";
 
     private Process holder;
 
@@ -38,6 +40,10 @@ class PrometheusProcess {
                 .command(prometheusDir + "/prometheus", CONFIG_FILE_PROMETHEUS_YML, WEB_ENABLE_REMOTE_SHUTDOWN, retentionTimeFlag());
         LOGGER.info("Prometheus flags: " + builder.command());
         this.holder = builder.start();
+    }
+
+    void reload() throws Exception {
+        Unirest.post(PROMETHEUS_RELOAD_URL).asString().getStatus();
     }
 
     void stop() throws Exception {
@@ -68,9 +74,6 @@ class PrometheusProcess {
     }
 
     private String retentionTimeFlag() {
-        long hours = retentionTime.toHours();
-        long minutes = retentionTime.minusHours(hours).toMinutes();
-        long seconds = retentionTime.minusHours(hours).minusMinutes(minutes).getSeconds();
-        return "-storage.local.retention=" + hours + "h" + minutes + "m" + seconds + "s";
+        return STORAGE_RETENTION_FLAG_PREFIX + retentionTime.toDays() + "d";
     }
 }

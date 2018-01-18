@@ -83,13 +83,6 @@ public class ConfigurationUpdater implements Runnable, Closeable {
     }
 
     private void updateConfigurationFile(List<Integer> copyPortNumbers) {
-        LOGGER.info("Stopping prometheus...");
-        try {
-            prometheusProcess.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOGGER.error("Can't stop prometheus: " + copyPortNumbers, e);
-        }
         LOGGER.info("Adding port numbers: " + copyPortNumbers);
         try (BufferedWriter writer = Files.newBufferedWriter(configFilePath, StandardOpenOption.APPEND)) {
             for (Integer portNumber : copyPortNumbers) {
@@ -106,18 +99,18 @@ public class ConfigurationUpdater implements Runnable, Closeable {
             LOGGER.error("Can't write port numbers: " + copyPortNumbers);
             e.printStackTrace();
         }
-        LOGGER.info("Restarting prometheus...");
+        LOGGER.info("Reloading prometheus configuration...");
         try {
-            prometheusProcess.start();
+            prometheusProcess.reload();
         } catch (Exception e) {
             e.printStackTrace();
             LOGGER.error("Can't stop prometheus: " + copyPortNumbers, e);
         }
-        LOGGER.info("Prometheus restarted!");
+        LOGGER.info("Prometheus configuration reloaded!");
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         if (!newPortNumbers.isEmpty()) {
             LOGGER.info("Flush memory...!");
             updateConfigurationFile(new ArrayList<>(newPortNumbers));
