@@ -35,7 +35,7 @@ public class Core {
             port = Integer.parseInt(args[2]);
         }
         if (args.length >= 4) {
-            retentionTime = Duration.parse("PT" + args[3]);
+            retentionTime = Duration.parse("P" + args[3]);
         }
 
         LOGGER.info("Starting SCPB!");
@@ -57,6 +57,7 @@ public class Core {
 
         LOGGER.info("Config file of Prometheus: " + configFilePath);
         LOGGER.info("IPv4 of AS 1-7: " + as17ipv4);
+        LOGGER.info("Storage retention time: " + retentionTime.getSeconds() + "s");
         this.prometheusProcess = new PrometheusProcess(prometheusDir, retentionTime);
         this.prometheusHeartbeatCheck = new PrometheusHeartbeatCheck(prometheusProcess);
         this.configurationUpdater = new ConfigurationUpdater(configFilePath, as17ipv4, prometheusProcess);
