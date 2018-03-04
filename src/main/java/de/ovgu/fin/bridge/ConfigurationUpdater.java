@@ -1,5 +1,7 @@
 package de.ovgu.fin.bridge;
 
+import de.ovgu.fin.bridge.data.PrometheusClientInfo;
+
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
@@ -24,23 +26,21 @@ public class ConfigurationUpdater implements Runnable, Closeable {
     private static final String YAML_PREFIX = "      ";
 
     private final Path configFilePath;
-    private final String as17ipv4;
 
-    private Set<Integer> portNumbers;
-    private BlockingQueue<Integer> newPortNumbers = new LinkedBlockingQueue<>();
+    private Set<PrometheusClientInfo> clientInfo;
+    private BlockingQueue<PrometheusClientInfo> newClientInfo = new LinkedBlockingQueue<>();
     private PrometheusProcess prometheusProcess;
 
-    ConfigurationUpdater(String configFilePath, String as17ipv4, PrometheusProcess prometheusProcess) throws IOException {
+    ConfigurationUpdater(String configFilePath, PrometheusProcess prometheusProcess) throws IOException {
         this.configFilePath = new File(configFilePath).toPath();
-        this.as17ipv4 = as17ipv4;
         this.prometheusProcess = prometheusProcess;
-        this.portNumbers = new HashSet<>(parseKnownPortNumbers());
+        this.clientInfo = new HashSet<>(parseKnownPortNumbers());
 
         // TreeSet => Sorted output
-        LOGGER.info("Monitoring ports: " + new TreeSet<>(portNumbers));
+        LOGGER.info("Monitoring ports: " + new TreeSet<>(clientInfo));
     }
 
-    private List<Integer> parseKnownPortNumbers() throws IOException {
+    private List<PrometheusClientInfo> parseKnownPortNumbers() throws IOException {
 
         return Files.lines(configFilePath)
                 .filter(s -> s.contains("- targets:"))
@@ -49,14 +49,16 @@ public class ConfigurationUpdater implements Runnable, Closeable {
                 .collect(Collectors.toList());
     }
 
-    private List<Integer> parseKnownPortNumbers(String yamlConfigEntry) {
-        Pattern portPattern = Pattern.compile("(\\d+)'");
-        Matcher matcher = portPattern.matcher(yamlConfigEntry);
-        List<Integer> ports = new ArrayList<>();
+    private List<PrometheusClientInfo> parseKnownPortNumbers(String yamlConfigEntry) {
+        // Pattern = Extract IP address and port number
+        Pattern ipPortPattern = Pattern.compile("((?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\\.){3}(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])):(\\d+)");
+        Matcher matcher = ipPortPattern.matcher(yamlConfigEntry);
+        List<PrometheusClientInfo> ports = new ArrayList<>();
         while (matcher.find()) {
-            String portMatch = matcher.group(1);
-            int port = Integer.parseInt(portMatch);
-            ports.add(port);
+            String ipGroup = matcher.group(1);
+            String portGroup = matcher.group(2);
+            int port = Integer.parseInt(portGroup);
+            ports.add(new PrometheusClientInfo(ipGroup, port));
         }
 
         return ports;
@@ -64,39 +66,39 @@ public class ConfigurationUpdater implements Runnable, Closeable {
 
     @Override
     public void run() {
-        int size = newPortNumbers.size();
+        int size = newClientInfo.size();
         if (size <= 0)
             return;
 
-        List<Integer> copyPortNumbers = new ArrayList<>(size);
-        newPortNumbers.drainTo(copyPortNumbers);
-        updateConfigurationFile(copyPortNumbers);
+        List<PrometheusClientInfo> copy = new ArrayList<>(size);
+        newClientInfo.drainTo(copy);
+        updateConfigurationFile(copy);
     }
 
-    boolean registerNewPortNumber(int portNumber) {
+    boolean registerPrometheusClient(PrometheusClientInfo clientInfo) {
         // Port number is already known
-        if (!portNumbers.add(portNumber))
+        if (!this.clientInfo.add(clientInfo))
             return false;
 
-        newPortNumbers.add(portNumber);
+        newClientInfo.add(clientInfo);
         return true;
     }
 
-    private void updateConfigurationFile(List<Integer> copyPortNumbers) {
-        LOGGER.info("Adding port numbers: " + copyPortNumbers);
+    private void updateConfigurationFile(List<PrometheusClientInfo> copyInfo) {
+        LOGGER.info("Adding prometheus client info: " + copyInfo);
         try (BufferedWriter writer = Files.newBufferedWriter(configFilePath, StandardOpenOption.APPEND)) {
-            for (Integer portNumber : copyPortNumbers) {
+            for (PrometheusClientInfo info : copyInfo) {
                 writer.newLine();
                 writer.append(YAML_PREFIX)
                         .append("- targets: ['")
-                        .append(as17ipv4)
+                        .append(info.getIp())
                         .append(":")
-                        .append(Integer.toString(portNumber))
+                        .append(Integer.toString(info.getPort()))
                         .append("']");
             }
 
         } catch (Exception e) {
-            LOGGER.error("Can't write port numbers: " + copyPortNumbers);
+            LOGGER.error("Can't write prometheus client info: " + copyInfo);
             e.printStackTrace();
         }
         LOGGER.info("Reloading prometheus configuration...");
@@ -104,16 +106,16 @@ public class ConfigurationUpdater implements Runnable, Closeable {
             prometheusProcess.reload();
         } catch (Exception e) {
             e.printStackTrace();
-            LOGGER.error("Can't stop prometheus: " + copyPortNumbers, e);
+            LOGGER.error("Can't stop prometheus: " + copyInfo, e);
         }
         LOGGER.info("Prometheus configuration reloaded!");
     }
 
     @Override
     public void close() {
-        if (!newPortNumbers.isEmpty()) {
+        if (!newClientInfo.isEmpty()) {
             LOGGER.info("Flush memory...!");
-            updateConfigurationFile(new ArrayList<>(newPortNumbers));
+            updateConfigurationFile(new ArrayList<>(newClientInfo));
         }
     }
 }

@@ -1,6 +1,11 @@
 package de.ovgu.fin.bridge;
 
+import com.owlike.genson.GenericType;
 import com.owlike.genson.Genson;
+import com.owlike.genson.GensonBuilder;
+import com.owlike.genson.reflect.VisibilityFilter;
+import de.ovgu.fin.bridge.data.PrometheusClientInfo;
+import de.ovgu.fin.bridge.data.RegisterPrometheusRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -8,7 +13,6 @@ import spark.Spark;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,27 +24,29 @@ import java.util.concurrent.TimeUnit;
 public class Core {
 
     static final Logger LOGGER = LoggerFactory.getLogger("SCPB");
+    private static final GenericType<Map<String, Map<String, PrometheusClientInfo>>> REQUEST_TYPE =
+            new GenericType<Map<String, Map<String, PrometheusClientInfo>>>() {
+            };
 
 
     public static void main(String[] args) throws Exception {
         if (args.length <= 0) {
-            LOGGER.error("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_DIR] [AS 1-7 IPv4] (PORT)");
+            LOGGER.error("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_DIR] (PORT) (RETENTION_TIME)");
             return;
         }
         String path = args[0];
-        String as17ipv4 = args[1];
         int port = 7536;
         Duration retentionTime = Duration.ofDays(90);
-        if (args.length >= 3) {
-            port = Integer.parseInt(args[2]);
+        if (args.length >= 2) {
+            port = Integer.parseInt(args[1]);
         }
-        if (args.length >= 4) {
+        if (args.length >= 3) {
             retentionTime = Duration.parse("P" + args[3]);
         }
 
         LOGGER.info("Starting SCPB!");
 
-        new Core(path, as17ipv4, retentionTime).start(port);
+        new Core(path, retentionTime).start(port);
     }
 
     private ConfigurationUpdater configurationUpdater;
@@ -49,18 +55,17 @@ public class Core {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
-    private Core(String prometheusDir, String as17ipv4, Duration retentionTime) throws Exception {
+    private Core(String prometheusDir, Duration retentionTime) throws Exception {
         String configFilePath = new File(prometheusDir, "prometheus.yml").getPath();
         if (!new File(configFilePath).exists()) {
             throw new IOException("Prometheus config file at '" + configFilePath + "' not found!");
         }
 
         LOGGER.info("Config file of Prometheus: " + configFilePath);
-        LOGGER.info("IPv4 of AS 1-7: " + as17ipv4);
         LOGGER.info("Storage retention time: " + retentionTime.getSeconds() + "s");
         this.prometheusProcess = new PrometheusProcess(prometheusDir, retentionTime);
         this.prometheusHeartbeatCheck = new PrometheusHeartbeatCheck(prometheusProcess);
-        this.configurationUpdater = new ConfigurationUpdater(configFilePath, as17ipv4, prometheusProcess);
+        this.configurationUpdater = new ConfigurationUpdater(configFilePath, prometheusProcess);
 
     }
 
@@ -107,29 +112,26 @@ public class Core {
 
     @SuppressWarnings("unchecked")
     private void registerRestResources() {
-        Spark.put("/registerClient/:port", (request, response) -> {
-            int newPort = Integer.parseInt(request.params("port"));
-            if (configurationUpdater.registerNewPortNumber(newPort))
-                response.status(200);
-            else
-                response.status(304);
-            return "";
-        });
 
-        final Genson genson = new Genson();
 
-        Spark.post("/registerClient/", (request, response) -> {
+        final Genson genson = new GensonBuilder()
+                .useFields(true)
+                .setFieldFilter(VisibilityFilter.ALL)
+                .create();
 
-            Map<String, Object> map = genson.deserialize(request.bodyAsBytes(), Map.class);
-            if (!map.containsKey("ports")) {
-                response.status(400);
-                return "Missing 'ports' elements in body!";
+        Spark.post("/registerPrometheusClient/", (request, response) -> {
+
+            // Workaround for POJO binding because of capital REMOVE, UPDATE and CREATE keys
+            Map<String, Map<String, PrometheusClientInfo>> rawJson = genson.deserialize(request.bodyAsBytes(), REQUEST_TYPE);
+
+            RegisterPrometheusRequest registerRequest = new RegisterPrometheusRequest(rawJson);
+
+            // TODO: Also save the Name of the border router
+            for (Map.Entry<String, PrometheusClientInfo> entry : registerRequest.getCreateRequests().entrySet()) {
+                configurationUpdater.registerPrometheusClient(entry.getValue());
             }
-            List<Long> newPorts = (List<Long>) map.get("ports");
 
-            for (Long newPort : newPorts) {
-                configurationUpdater.registerNewPortNumber(newPort.intValue());
-            }
+            System.out.println(registerRequest);
             response.status(200);
             return "";
         });
