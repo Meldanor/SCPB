@@ -13,6 +13,9 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     // JSON Library
     compile group: 'com.owlike', name: 'genson', version: '1.4'
+    // YAML Library
+    compile group: 'org.yaml', name: 'snakeyaml', version: '1.20'
+
     // REST Library
     compile group: 'com.sparkjava', name: 'spark-core', version: '2.7.0'
     compile group: "org.slf4j", name: 'slf4j-simple', version: '1.7.21'

@@ -11,6 +11,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="SpeedCamPrometheusBridge_main" />
     <orderEntry type="library" name="Gradle: com.owlike:genson:1.4" level="project" />
+    <orderEntry type="library" name="Gradle: org.yaml:snakeyaml:1.20" level="project" />
     <orderEntry type="library" name="Gradle: com.sparkjava:spark-core:2.7.0" level="project" />
     <orderEntry type="library" name="Gradle: org.slf4j:slf4j-simple:1.7.21" level="project" />
     <orderEntry type="library" name="Gradle: com.mashape.unirest:unirest-java:1.4.9" level="project" />

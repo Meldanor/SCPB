@@ -1,19 +1,17 @@
 package de.ovgu.fin.bridge;
 
 import de.ovgu.fin.bridge.data.PrometheusClientInfo;
+import de.ovgu.fin.bridge.data.PrometheusClientInfoYamlConverter;
+import org.yaml.snakeyaml.Yaml;
 
-import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static de.ovgu.fin.bridge.Core.LOGGER;
@@ -22,8 +20,6 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
  * Created on 06.11.2017.
  */
 public class ConfigurationUpdater implements Runnable, Closeable {
-
-    private static final String YAML_PREFIX = "      ";
 
     private final Path configFilePath;
 
@@ -41,27 +37,24 @@ public class ConfigurationUpdater implements Runnable, Closeable {
     }
 
     private List<PrometheusClientInfo> parseKnownPortNumbers() throws IOException {
+        Map<String, Object> root = loadConfig();
 
-        return Files.lines(configFilePath)
-                .filter(s -> s.contains("- targets:"))
-                .map(this::parseKnownPortNumbers)
-                .flatMap(List::stream)
+        return getTargetList(root)
+                .stream()
+                .map(PrometheusClientInfoYamlConverter::deserialize)
                 .collect(Collectors.toList());
     }
 
-    private List<PrometheusClientInfo> parseKnownPortNumbers(String yamlConfigEntry) {
-        // Pattern = Extract IP address and port number
-        Pattern ipPortPattern = Pattern.compile("((?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\\.){3}(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])):(\\d+)");
-        Matcher matcher = ipPortPattern.matcher(yamlConfigEntry);
-        List<PrometheusClientInfo> ports = new ArrayList<>();
-        while (matcher.find()) {
-            String ipGroup = matcher.group(1);
-            String portGroup = matcher.group(2);
-            int port = Integer.parseInt(portGroup);
-            ports.add(new PrometheusClientInfo(ipGroup, port));
-        }
+    private Map<String, Object> loadConfig() throws IOException {
+        Yaml yaml = new Yaml();
+        return yaml.load(Files.newInputStream(configFilePath));
+    }
 
-        return ports;
+    @SuppressWarnings("unchecked")
+    private List<String> getTargetList(Map<String, Object> root) {
+        Map<String, Object> scrape_configs = (Map<String, Object>) ((List) root.get("scrape_configs")).get(0);
+        Map<String, Object> static_configs = (Map<String, Object>) ((List) (scrape_configs.get("static_configs"))).get(0);
+        return (List<String>) static_configs.get("targets");
     }
 
     @Override
@@ -86,20 +79,14 @@ public class ConfigurationUpdater implements Runnable, Closeable {
 
     private void updateConfigurationFile(List<PrometheusClientInfo> copyInfo) {
         LOGGER.info("Adding prometheus client info: " + copyInfo);
-        try (BufferedWriter writer = Files.newBufferedWriter(configFilePath, StandardOpenOption.APPEND)) {
-            for (PrometheusClientInfo info : copyInfo) {
-                writer.newLine();
-                writer.append(YAML_PREFIX)
-                        .append("- targets: ['")
-                        .append(info.getIp())
-                        .append(":")
-                        .append(Integer.toString(info.getPort()))
-                        .append("']");
-            }
-
-        } catch (Exception e) {
-            LOGGER.error("Can't write prometheus client info: " + copyInfo);
-            e.printStackTrace();
+        try {
+            Map<String, Object> root = loadConfig();
+            List<String> targetList = getTargetList(root);
+            copyInfo.stream()
+                    .map(PrometheusClientInfoYamlConverter::serialize)
+                    .forEach(targetList::add);
+        } catch (IOException e) {
+            LOGGER.error("Can't write prometheus client info: " + copyInfo, e);
         }
         LOGGER.info("Reloading prometheus configuration...");
         try {
