@@ -126,10 +126,7 @@ public class Core {
 
             RegisterPrometheusRequest registerRequest = new RegisterPrometheusRequest(rawJson);
 
-            // TODO: Also save the Name of the border router
-            for (Map.Entry<String, PrometheusClientInfo> entry : registerRequest.getCreateRequests().entrySet()) {
-                configurationUpdater.registerPrometheusClient(entry.getValue());
-            }
+            configurationUpdater.registerPrometheusClient(registerRequest);
 
             System.out.println(registerRequest);
             response.status(200);

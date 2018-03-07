@@ -1,12 +1,13 @@
 package de.ovgu.fin.bridge.data;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class RegisterPrometheusRequest {
 
-    private Map<String, PrometheusClientInfo> create;
-    private Map<String, PrometheusClientInfo> update;
-    private Map<String, PrometheusClientInfo> remove;
+    private Map<String, PrometheusClientInfo> create = Collections.emptyMap();
+    private Map<String, PrometheusClientInfo> update = Collections.emptyMap();
+    private Map<String, PrometheusClientInfo> remove = Collections.emptyMap();
 
     public RegisterPrometheusRequest(Map<String, Map<String, PrometheusClientInfo>> rawJsonObject) {
         for (Map.Entry<String, Map<String, PrometheusClientInfo>> entry : rawJsonObject.entrySet()) {
@@ -29,6 +30,8 @@ public class RegisterPrometheusRequest {
         return create;
     }
 
+    // TODO: Need to be implemented - if it is useful
+    @SuppressWarnings("unused")
     public Map<String, PrometheusClientInfo> getUpdateRequests() {
         return update;
     }
