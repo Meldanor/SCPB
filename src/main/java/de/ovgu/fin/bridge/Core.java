@@ -41,7 +41,7 @@ public class Core {
             port = Integer.parseInt(args[1]);
         }
         if (args.length >= 3) {
-            retentionTime = Duration.parse("P" + args[3]);
+            retentionTime = Duration.parse("P" + args[2]);
         }
 
         LOGGER.info("Starting SCPB!");

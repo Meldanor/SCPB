@@ -4,7 +4,12 @@ import java.util.Objects;
 
 public class PrometheusClientInfo {
 
-    public PrometheusClientInfo(String ip, int port) {
+    // Used for serialization process
+    @SuppressWarnings("unused")
+    public PrometheusClientInfo() {
+    }
+
+    PrometheusClientInfo(String ip, int port) {
         this.ip = ip;
         this.port = port;
     }

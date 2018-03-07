@@ -7,6 +7,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -33,7 +34,7 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         this.clientInfo = new HashSet<>(parseKnownPortNumbers());
 
         // TreeSet => Sorted output
-        LOGGER.info("Monitoring ports: " + new TreeSet<>(clientInfo));
+        LOGGER.info("Monitoring ports: " + clientInfo);
     }
 
     private List<PrometheusClientInfo> parseKnownPortNumbers() throws IOException {
@@ -85,6 +86,10 @@ public class ConfigurationUpdater implements Runnable, Closeable {
             copyInfo.stream()
                     .map(PrometheusClientInfoYamlConverter::serialize)
                     .forEach(targetList::add);
+            Yaml yaml = new Yaml();
+            try (Writer writer = Files.newBufferedWriter(configFilePath)) {
+                yaml.dump(root, writer);
+            }
         } catch (IOException e) {
             LOGGER.error("Can't write prometheus client info: " + copyInfo, e);
         }
