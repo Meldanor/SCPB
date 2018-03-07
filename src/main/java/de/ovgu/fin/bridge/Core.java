@@ -24,7 +24,7 @@ public class Core {
 
     public static void main(String[] args) throws Exception {
         if (args.length <= 0) {
-            LOGGER.error("Usage: SpeedCamePrometheusBridge.jar [PATH_TO_PROMETHEUS_DIR] (PORT) (RETENTION_TIME)");
+            LOGGER.error("Usage: SCBP.jar [PATH_TO_PROMETHEUS_DIR] (PORT) (RETENTION_TIME)");
             return;
         }
         String path = args[0];
