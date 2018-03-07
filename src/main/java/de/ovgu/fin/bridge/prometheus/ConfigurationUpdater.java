@@ -1,4 +1,4 @@
-package de.ovgu.fin.bridge;
+package de.ovgu.fin.bridge.prometheus;
 
 import de.ovgu.fin.bridge.data.PrometheusClientInfo;
 import de.ovgu.fin.bridge.data.PrometheusClientInfoYamlConverter;
@@ -31,7 +31,7 @@ public class ConfigurationUpdater implements Runnable, Closeable {
     private BlockingQueue<RegisterPrometheusRequest> newRequests = new LinkedBlockingQueue<>();
     private PrometheusProcess prometheusProcess;
 
-    ConfigurationUpdater(String configFilePath, PrometheusProcess prometheusProcess) throws IOException {
+    public ConfigurationUpdater(String configFilePath, PrometheusProcess prometheusProcess) throws IOException {
         this.configFilePath = new File(configFilePath).toPath();
         this.prometheusProcess = prometheusProcess;
 
@@ -65,7 +65,7 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         updateConfigurationFile(copy);
     }
 
-    void registerPrometheusClient(RegisterPrometheusRequest request) {
+    public void registerPrometheusClient(RegisterPrometheusRequest request) {
         newRequests.add(request);
     }
 

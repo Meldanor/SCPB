@@ -1,4 +1,4 @@
-package de.ovgu.fin.bridge;
+package de.ovgu.fin.bridge.prometheus;
 
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
@@ -13,7 +13,7 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
 /**
  * Created on 06.11.2017.
  */
-class PrometheusProcess {
+public class PrometheusProcess {
 
     private static final String CONFIG_FILE_PROMETHEUS_YML = "--config.file=prometheus.yml";
     private static final String WEB_ENABLE_REMOTE_SHUTDOWN = "--web.enable-lifecycle";
@@ -26,12 +26,12 @@ class PrometheusProcess {
     private final String prometheusDir;
     private final Duration retentionTime;
 
-    PrometheusProcess(String prometheusDir, Duration retentionTime) {
+    public PrometheusProcess(String prometheusDir, Duration retentionTime) {
         this.prometheusDir = prometheusDir;
         this.retentionTime = retentionTime;
     }
 
-    void start() throws Exception {
+    public void start() throws Exception {
         if (isRunning())
             return;
         ProcessBuilder builder = new ProcessBuilder()
@@ -46,7 +46,7 @@ class PrometheusProcess {
         Unirest.post(PROMETHEUS_RELOAD_URL).asString().getStatus();
     }
 
-    void stop() throws Exception {
+    public void stop() throws Exception {
         if (!isRunning())
             return;
 

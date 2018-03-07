@@ -1,4 +1,6 @@
-package de.ovgu.fin.bridge;
+package de.ovgu.fin.bridge.prometheus;
+
+import de.ovgu.fin.bridge.Core;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -13,7 +15,7 @@ public class PrometheusHeartbeatCheck implements Runnable {
     private final PrometheusProcess prometheusProcess;
     private LocalDateTime checkTime;
 
-    PrometheusHeartbeatCheck(PrometheusProcess prometheusProcess) {
+    public PrometheusHeartbeatCheck(PrometheusProcess prometheusProcess) {
         this.prometheusProcess = prometheusProcess;
     }
 
