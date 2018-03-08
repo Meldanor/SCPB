@@ -14,6 +14,7 @@ import spark.Spark;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.ovgu.fin.bridge.Core.LOGGER;
@@ -104,7 +105,7 @@ public class RestApi {
         LOGGER.debug("Register GET " + GET_PATH_SERVER_REQUESTS);
 
         return (request, response) -> {
-            List<String> pathRequests = pathServerRequestProxy.getLatestPathRequests();
+            Set<String> pathRequests = pathServerRequestProxy.getLatestPathRequests();
 
             String jsonString = genson.serialize(pathRequests);
             response.body(jsonString);

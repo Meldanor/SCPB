@@ -1,8 +1,9 @@
 package de.ovgu.fin.bridge.speedcam;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -24,13 +25,13 @@ public class PathServerRequestProxy {
         this.rawPathRequests.addAll(toAddPathRequests);
     }
 
-    public List<String> getLatestPathRequests() {
+    public Set<String> getLatestPathRequests() {
 
         int size = rawPathRequests.size();
         if (size == 0)
-            return Collections.emptyList();
+            return Collections.emptySet();
 
-        List<String> copy = new ArrayList<>(size);
+        Set<String> copy = new HashSet<>(size);
         rawPathRequests.drainTo(copy);
 
         return copy;
