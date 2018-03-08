@@ -4,6 +4,7 @@ import de.ovgu.fin.bridge.api.RestApi;
 import de.ovgu.fin.bridge.prometheus.ConfigurationUpdater;
 import de.ovgu.fin.bridge.prometheus.PrometheusHeartbeatCheck;
 import de.ovgu.fin.bridge.prometheus.PrometheusProcess;
+import de.ovgu.fin.bridge.speedcam.PathServerRequestProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,7 @@ public class Core {
     private ConfigurationUpdater configurationUpdater;
     private PrometheusProcess prometheusProcess;
     private PrometheusHeartbeatCheck prometheusHeartbeatCheck;
+    private PathServerRequestProxy pathServerRequestProxy;
 
     private final ScheduledExecutorService scheduler;
 
@@ -61,6 +63,7 @@ public class Core {
         this.prometheusProcess = new PrometheusProcess(prometheusDir, retentionTime);
         this.prometheusHeartbeatCheck = new PrometheusHeartbeatCheck(prometheusProcess);
         this.configurationUpdater = new ConfigurationUpdater(configFilePath, prometheusProcess);
+        this.pathServerRequestProxy = new PathServerRequestProxy();
     }
 
     private void start(int port) throws Exception {
@@ -68,7 +71,7 @@ public class Core {
         startUpdaterThread();
         startPrometheus();
 
-        new RestApi(configurationUpdater).registerApi(port);
+        new RestApi(configurationUpdater, pathServerRequestProxy).registerApi(port);
 
         // Write current port numbers at shutdown
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
