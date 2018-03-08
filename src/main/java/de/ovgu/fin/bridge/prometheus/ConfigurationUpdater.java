@@ -35,10 +35,10 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         this.configFilePath = new File(configFilePath).toPath();
         this.prometheusProcess = prometheusProcess;
 
-        LOGGER.info("Monitoring prometheus clients: " + loadMonitoringClients());
+        LOGGER.info("Monitoring prometheus clients: " + getRegisteredClients());
     }
 
-    private List<String> loadMonitoringClients() throws IOException {
+    public List<String> getRegisteredClients() throws IOException {
         return getTargetList(loadConfig());
     }
 
