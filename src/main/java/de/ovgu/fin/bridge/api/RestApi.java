@@ -59,6 +59,8 @@ public class RestApi {
         Spark.get(GET_PATH_SERVER_REQUESTS, getPathServerRequests(genson));
         Spark.post(POST_PATH_SERVER_REQUESTS, addPathServerRequests(genson));
 
+        // enable possible gzip
+        Spark.after(((request, response) -> response.header("Content-Encoding", "gzip")));
 
         LOGGER.info("REST service started at port " + port);
     }
