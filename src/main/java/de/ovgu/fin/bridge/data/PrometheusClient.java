@@ -2,20 +2,20 @@ package de.ovgu.fin.bridge.data;
 
 import java.util.Objects;
 
-public class PrometheusClientInfo {
+public class PrometheusClient {
 
     // Used for serialization process
     @SuppressWarnings("unused")
-    public PrometheusClientInfo() {
+    public PrometheusClient() {
     }
 
-    PrometheusClientInfo(String ip, int port) {
-        this.ip = ip;
-        this.port = port;
-    }
-
+    @SuppressWarnings("unused")
     private String ip;
+
+    @SuppressWarnings("unused")
     private int port;
+
+    private String brInfo;
 
     public String getIp() {
         return ip;
@@ -25,11 +25,21 @@ public class PrometheusClientInfo {
         return port;
     }
 
+    @SuppressWarnings("unused")
+    public String getBrInfo() {
+        return brInfo;
+    }
+
+    public void setBrInfo(String brInfo) {
+        this.brInfo = brInfo;
+    }
+
     @Override
     public String toString() {
-        return "PrometheusClientInfo{" +
+        return "PrometheusClient{" +
                 "ip='" + ip + '\'' +
                 ", port=" + port +
+                ", brInfo='" + brInfo + '\'' +
                 '}';
     }
 
@@ -37,13 +47,15 @@ public class PrometheusClientInfo {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PrometheusClientInfo that = (PrometheusClientInfo) o;
+        PrometheusClient that = (PrometheusClient) o;
         return port == that.port &&
-                Objects.equals(ip, that.ip);
+                Objects.equals(ip, that.ip) &&
+                Objects.equals(brInfo, that.brInfo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ip, port);
+
+        return Objects.hash(ip, port, brInfo);
     }
 }

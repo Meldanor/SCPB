@@ -1,20 +1,14 @@
 package de.ovgu.fin.bridge.prometheus;
 
-import de.ovgu.fin.bridge.data.PrometheusClientInfo;
-import de.ovgu.fin.bridge.data.PrometheusClientInfoYamlConverter;
+import de.ovgu.fin.bridge.data.PrometheusClient;
 import de.ovgu.fin.bridge.data.RegisterPrometheusRequest;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
@@ -26,32 +20,18 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
  */
 public class ConfigurationUpdater implements Runnable, Closeable {
 
-    private final Path configFilePath;
+    private final PrometheusConfig prometheusConfig;
+    private final PrometheusClientManager prometheusClientManager;
 
     private BlockingQueue<RegisterPrometheusRequest> newRequests = new LinkedBlockingQueue<>();
     private PrometheusProcess prometheusProcess;
 
     public ConfigurationUpdater(String configFilePath, PrometheusProcess prometheusProcess) throws IOException {
-        this.configFilePath = new File(configFilePath).toPath();
+        this.prometheusConfig = new PrometheusConfig(new File(configFilePath).toPath());
+        this.prometheusClientManager = new PrometheusClientManager();
         this.prometheusProcess = prometheusProcess;
 
-        LOGGER.info("Monitoring prometheus clients: " + getRegisteredClients());
-    }
-
-    public List<String> getRegisteredClients() throws IOException {
-        return getTargetList(loadConfig());
-    }
-
-    private Map<String, Object> loadConfig() throws IOException {
-        Yaml yaml = new Yaml();
-        return yaml.load(Files.newInputStream(configFilePath));
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<String> getTargetList(Map<String, Object> root) {
-        Map<String, Object> scrape_configs = (Map<String, Object>) ((List) root.get("scrape_configs")).get(0);
-        Map<String, Object> static_configs = (Map<String, Object>) ((List) (scrape_configs.get("static_configs"))).get(0);
-        return (List<String>) static_configs.get("targets");
+        LOGGER.info("Monitoring prometheus clients: " + prometheusClientManager.getRegisteredClients());
     }
 
     @Override
@@ -69,50 +49,25 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         newRequests.add(request);
     }
 
+    public Collection<PrometheusClient> getRegisteredPrometheusClients() {
+        return prometheusClientManager.getRegisteredClients();
+    }
+
     private void updateConfigurationFile(List<RegisterPrometheusRequest> requests) {
-        Map<String, Object> configRoot;
-        try {
-            configRoot = loadConfig();
-        } catch (IOException e) {
-            LOGGER.error("Can't read prometheus config file!", e);
-            return;
-        }
-
-        Set<PrometheusClientInfo> registeredClients = getTargetList(configRoot).stream()
-                .map(PrometheusClientInfoYamlConverter::deserialize)
-                .collect(Collectors.toSet());
-
-        List<PrometheusClientInfo> toRemoveClients = toRemoveClients(requests);
+        List<PrometheusClient> toRemoveClients = toRemoveClients(requests);
         if (!toRemoveClients.isEmpty()) {
             LOGGER.info("Remove prometheus clients: " + toRemoveClients);
-
-            boolean hasRemoved = registeredClients.removeAll(toRemoveClients);
-            if (!hasRemoved) {
-                LOGGER.warn("Tried to remove prometheus clients, but none of them was existing!");
-            }
+            prometheusClientManager.removeClients(toRemoveClients);
         }
 
-        List<PrometheusClientInfo> toAddClients = toAddClients(requests);
+        List<PrometheusClient> toAddClients = toAddClients(requests);
         if (!toAddClients.isEmpty()) {
             LOGGER.info("Add prometheus clients: " + toAddClients);
-            registeredClients.addAll(toAddClients);
+            prometheusClientManager.registerClients(toAddClients);
         }
 
-        // Clear targetList because it has a reference to the root object and then add all registered clients to this
-        List<String> targetList = getTargetList(configRoot);
-        targetList.clear();
-        registeredClients.stream()
-                .map(PrometheusClientInfoYamlConverter::serialize)
-                .forEach(targetList::add);
+        prometheusConfig.writeTargets(prometheusClientManager.getRegisteredClients());
 
-        LOGGER.info("Update prometheus config!");
-        // Serialize the new target list
-        try (Writer writer = Files.newBufferedWriter(configFilePath)) {
-            Yaml yaml = new Yaml();
-            yaml.dump(configRoot, writer);
-        } catch (IOException e) {
-            LOGGER.error("Can't write prometheus client info: " + registeredClients, e);
-        }
         LOGGER.info("Reloading prometheus configuration...");
         try {
             prometheusProcess.reload();
@@ -122,14 +77,14 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         LOGGER.info("Prometheus configuration updated and reloaded!");
     }
 
-    private List<PrometheusClientInfo> toRemoveClients(List<RegisterPrometheusRequest> requests) {
+    private List<PrometheusClient> toRemoveClients(List<RegisterPrometheusRequest> requests) {
         return requests.stream()
                 .map(RegisterPrometheusRequest::getRemoveRequests)
                 .flatMap(map -> map.values().stream())
                 .collect(Collectors.toList());
     }
 
-    private List<PrometheusClientInfo> toAddClients(List<RegisterPrometheusRequest> requests) {
+    private List<PrometheusClient> toAddClients(List<RegisterPrometheusRequest> requests) {
         return requests.stream()
                 .map(RegisterPrometheusRequest::getCreateRequests)
                 .flatMap(map -> map.values().stream())

@@ -1,5 +1,8 @@
 package de.ovgu.fin.bridge;
 
+import com.owlike.genson.Genson;
+import com.owlike.genson.GensonBuilder;
+import com.owlike.genson.reflect.VisibilityFilter;
 import de.ovgu.fin.bridge.api.RestApi;
 import de.ovgu.fin.bridge.prometheus.ConfigurationUpdater;
 import de.ovgu.fin.bridge.prometheus.PrometheusHeartbeatCheck;
@@ -116,5 +119,12 @@ public class Core {
                 LOGGER.error("Thread error!", e);
             }
         };
+    }
+
+    public static Genson createSerializer() {
+        return new GensonBuilder()
+                .useFields(true)
+                .setFieldFilter(VisibilityFilter.ALL)
+                .create();
     }
 }

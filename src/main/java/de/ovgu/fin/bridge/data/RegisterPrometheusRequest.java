@@ -5,12 +5,12 @@ import java.util.Map;
 
 public class RegisterPrometheusRequest {
 
-    private Map<String, PrometheusClientInfo> create = Collections.emptyMap();
-    private Map<String, PrometheusClientInfo> update = Collections.emptyMap();
-    private Map<String, PrometheusClientInfo> remove = Collections.emptyMap();
+    private Map<String, PrometheusClient> create = Collections.emptyMap();
+    private Map<String, PrometheusClient> update = Collections.emptyMap();
+    private Map<String, PrometheusClient> remove = Collections.emptyMap();
 
-    public RegisterPrometheusRequest(Map<String, Map<String, PrometheusClientInfo>> rawJsonObject) {
-        for (Map.Entry<String, Map<String, PrometheusClientInfo>> entry : rawJsonObject.entrySet()) {
+    public RegisterPrometheusRequest(Map<String, Map<String, PrometheusClient>> rawJsonObject) {
+        for (Map.Entry<String, Map<String, PrometheusClient>> entry : rawJsonObject.entrySet()) {
             String key = entry.getKey().toLowerCase();
             switch (key) {
                 case "create":
@@ -23,20 +23,24 @@ public class RegisterPrometheusRequest {
                     this.remove = entry.getValue();
                     break;
             }
+
+            for (Map.Entry<String, PrometheusClient> clientEntry : entry.getValue().entrySet()) {
+                clientEntry.getValue().setBrInfo(clientEntry.getKey());
+            }
         }
     }
 
-    public Map<String, PrometheusClientInfo> getCreateRequests() {
+    public Map<String, PrometheusClient> getCreateRequests() {
         return create;
     }
 
     // TODO: Need to be implemented - if it is useful
     @SuppressWarnings("unused")
-    public Map<String, PrometheusClientInfo> getUpdateRequests() {
+    public Map<String, PrometheusClient> getUpdateRequests() {
         return update;
     }
 
-    public Map<String, PrometheusClientInfo> getRemoveRequests() {
+    public Map<String, PrometheusClient> getRemoveRequests() {
         return remove;
     }
 
@@ -48,5 +52,4 @@ public class RegisterPrometheusRequest {
                 ", remove=" + remove +
                 '}';
     }
-
 }

@@ -2,20 +2,18 @@ package de.ovgu.fin.bridge.api;
 
 import com.owlike.genson.GenericType;
 import com.owlike.genson.Genson;
-import com.owlike.genson.GensonBuilder;
-import com.owlike.genson.reflect.VisibilityFilter;
-import de.ovgu.fin.bridge.data.PrometheusClientInfo;
-import de.ovgu.fin.bridge.data.PrometheusClientInfoYamlConverter;
+import de.ovgu.fin.bridge.Core;
+import de.ovgu.fin.bridge.data.PrometheusClient;
 import de.ovgu.fin.bridge.data.RegisterPrometheusRequest;
 import de.ovgu.fin.bridge.prometheus.ConfigurationUpdater;
 import de.ovgu.fin.bridge.speedcam.PathServerRequestProxy;
 import spark.Route;
 import spark.Spark;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static de.ovgu.fin.bridge.Core.LOGGER;
 
@@ -24,8 +22,8 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
  */
 public class RestApi {
 
-    private static final GenericType<Map<String, Map<String, PrometheusClientInfo>>> PROMETHEUS_CLIENT_REQUEST_TYPE =
-            new GenericType<Map<String, Map<String, PrometheusClientInfo>>>() {
+    private static final GenericType<Map<String, Map<String, PrometheusClient>>> PROMETHEUS_CLIENT_REQUEST_TYPE =
+            new GenericType<Map<String, Map<String, PrometheusClient>>>() {
             };
 
     private static final GenericType<List<String>> PATH_SERVER_REQUEST_TYPE = new GenericType<List<String>>() {
@@ -48,10 +46,7 @@ public class RestApi {
 
     public void registerApi(int port) {
         Spark.port(port);
-        final Genson genson = new GensonBuilder()
-                .useFields(true)
-                .setFieldFilter(VisibilityFilter.ALL)
-                .create();
+        final Genson genson = Core.createSerializer();
 
         Spark.get(GET_PROMETHEUS_CLIENTS, getRegisteredClients(genson));
         Spark.post(POST_PROMETHEUS_CLIENTS, registerPrometheusClient(genson));
@@ -70,7 +65,7 @@ public class RestApi {
 
         return (request, response) -> {
             // Workaround for POJO binding because of capital REMOVE, UPDATE and CREATE keys
-            Map<String, Map<String, PrometheusClientInfo>> rawJson = genson.deserialize(request.bodyAsBytes(), PROMETHEUS_CLIENT_REQUEST_TYPE);
+            Map<String, Map<String, PrometheusClient>> rawJson = genson.deserialize(request.bodyAsBytes(), PROMETHEUS_CLIENT_REQUEST_TYPE);
 
             if (rawJson == null || rawJson.isEmpty()) {
                 response.status(400);
@@ -89,10 +84,7 @@ public class RestApi {
 
         return (request, response) -> {
             // Transform YAML to JSON
-            List<PrometheusClientInfo> clients = configurationUpdater.getRegisteredClients()
-                    .stream()
-                    .map(PrometheusClientInfoYamlConverter::deserialize)
-                    .collect(Collectors.toList());
+            Collection<PrometheusClient> clients = configurationUpdater.getRegisteredPrometheusClients();
 
             String jsonString = genson.serialize(clients);
             response.body(jsonString);
