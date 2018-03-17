@@ -52,6 +52,8 @@ public class PrometheusClient {
                 "ip='" + ip + '\'' +
                 ", port=" + port +
                 ", brId='" + brId + '\'' +
+                ", sourceIsdAs='" + sourceIsdAs + '\'' +
+                ", targetIsdAs='" + targetIsdAs + '\'' +
                 '}';
     }
 
@@ -62,11 +64,13 @@ public class PrometheusClient {
         PrometheusClient that = (PrometheusClient) o;
         return port == that.port &&
                 Objects.equals(ip, that.ip) &&
-                Objects.equals(brId, that.brId);
+                Objects.equals(brId, that.brId) &&
+                Objects.equals(sourceIsdAs, that.sourceIsdAs) &&
+                Objects.equals(targetIsdAs, that.targetIsdAs);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ip, port, brId);
+        return Objects.hash(ip, port, brId, sourceIsdAs, targetIsdAs);
     }
 }
