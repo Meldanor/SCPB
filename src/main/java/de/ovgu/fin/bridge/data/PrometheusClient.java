@@ -11,11 +11,12 @@ public class PrometheusClient {
 
     @SuppressWarnings("unused")
     private String ip;
-
     @SuppressWarnings("unused")
     private int port;
-
-    private String brInfo;
+    private String brId;
+    private String sourceIsdAs;
+    @SuppressWarnings("unused")
+    private String targetIsdAs;
 
     public String getIp() {
         return ip;
@@ -26,12 +27,23 @@ public class PrometheusClient {
     }
 
     @SuppressWarnings("unused")
-    public String getBrInfo() {
-        return brInfo;
+    public String getBrId() {
+        return brId;
     }
 
-    public void setBrInfo(String brInfo) {
-        this.brInfo = brInfo;
+    public void setBrIdAndSource(String brId) {
+        setBrId(brId);
+
+        // SourceIsdAs is the br id till the second dash '-'
+        int i = brId.lastIndexOf('-');
+        if (i < 0)
+            throw new RuntimeException("BrId '" + brId + "' is invalid! ");
+
+        this.sourceIsdAs = brId.substring(0, i);
+    }
+
+    public void setBrId(String brId) {
+        this.brId = brId;
     }
 
     @Override
@@ -39,7 +51,7 @@ public class PrometheusClient {
         return "PrometheusClient{" +
                 "ip='" + ip + '\'' +
                 ", port=" + port +
-                ", brInfo='" + brInfo + '\'' +
+                ", brId='" + brId + '\'' +
                 '}';
     }
 
@@ -50,12 +62,11 @@ public class PrometheusClient {
         PrometheusClient that = (PrometheusClient) o;
         return port == that.port &&
                 Objects.equals(ip, that.ip) &&
-                Objects.equals(brInfo, that.brInfo);
+                Objects.equals(brId, that.brId);
     }
 
     @Override
     public int hashCode() {
-
-        return Objects.hash(ip, port, brInfo);
+        return Objects.hash(ip, port, brId);
     }
 }

@@ -25,7 +25,7 @@ public class RegisterPrometheusRequest {
             }
 
             for (Map.Entry<String, PrometheusClient> clientEntry : entry.getValue().entrySet()) {
-                clientEntry.getValue().setBrInfo(clientEntry.getKey());
+                clientEntry.getValue().setBrIdAndSource(clientEntry.getKey());
             }
         }
     }
