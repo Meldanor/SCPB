@@ -32,6 +32,8 @@ public class PrometheusClient {
     }
 
     public void setBrIdAndSource(String brId) {
+        // delete possible leading br info
+        brId = brId.replace("br", "");
         setBrId(brId);
 
         // SourceIsdAs is the br id till the second dash '-'
