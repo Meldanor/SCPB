@@ -4,8 +4,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Class only for the speedCam test environment. Holds raw path requests, which are sent to SCPB to serve them to
@@ -15,14 +14,14 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class PathServerRequestProxy {
 
-    private BlockingQueue<String> rawPathRequests;
+    private ConcurrentHashMap.KeySetView<String, Boolean> rawPathRequests;
 
     public PathServerRequestProxy() {
-        this.rawPathRequests = new LinkedBlockingQueue<>();
+        this.rawPathRequests = ConcurrentHashMap.newKeySet();
     }
 
     public void addPathRequests(List<String> toAddPathRequests) {
-        this.rawPathRequests.addAll(toAddPathRequests);
+        rawPathRequests.addAll(toAddPathRequests);
     }
 
     public Set<String> getLatestPathRequests() {
@@ -31,9 +30,6 @@ public class PathServerRequestProxy {
         if (size == 0)
             return Collections.emptySet();
 
-        Set<String> copy = new HashSet<>(size);
-        rawPathRequests.drainTo(copy);
-
-        return copy;
+        return new HashSet<>(rawPathRequests);
     }
 }
