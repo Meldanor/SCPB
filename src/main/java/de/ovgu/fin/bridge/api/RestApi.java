@@ -63,6 +63,31 @@ public class RestApi {
     private Route registerPrometheusClient(Genson genson) {
         LOGGER.debug("Register POST " + POST_PROMETHEUS_CLIENTS);
 
+        /* Example request
+        {
+            "CREATE": {
+                "br1-17-1": {
+                    "ip": "192.168.0.1",
+                    "port": "12",
+                    "targetIsdAs": "1-18"
+                }
+            },
+            "UPDATE": {
+                "br1-17-1": {
+                    "ip": "192.168.0.1",
+                    "port": "12",
+                    "targetIsdAs": "1-18"
+                }
+            },
+            "REMOVE": {
+                "br1-17-1": {
+                    "ip": "192.168.0.1",
+                    "port": "12",
+                    "targetIsdAs": "1-18"
+                }
+            }
+        }
+         */
         return (request, response) -> {
             // Workaround for POJO binding because of capital REMOVE, UPDATE and CREATE keys
             Map<String, Map<String, PrometheusClient>> rawJson = genson.deserialize(request.bodyAsBytes(), PROMETHEUS_CLIENT_REQUEST_TYPE);

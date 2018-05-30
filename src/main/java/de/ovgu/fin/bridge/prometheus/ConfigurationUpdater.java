@@ -1,11 +1,15 @@
 package de.ovgu.fin.bridge.prometheus;
 
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import de.ovgu.fin.bridge.data.PrometheusClient;
 import de.ovgu.fin.bridge.data.RegisterPrometheusRequest;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,15 +25,15 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
 public class ConfigurationUpdater implements Runnable, Closeable {
 
     private final PrometheusConfig prometheusConfig;
+    private final URL prometheusUrl;
     private final PrometheusClientManager prometheusClientManager;
 
     private BlockingQueue<RegisterPrometheusRequest> newRequests = new LinkedBlockingQueue<>();
-    private PrometheusProcess prometheusProcess;
 
-    public ConfigurationUpdater(String configFilePath, PrometheusProcess prometheusProcess) throws IOException {
+    public ConfigurationUpdater(String configFilePath, URL prometheusUrl) throws IOException {
         this.prometheusConfig = new PrometheusConfig(new File(configFilePath).toPath());
+        this.prometheusUrl = prometheusUrl;
         this.prometheusClientManager = new PrometheusClientManager();
-        this.prometheusProcess = prometheusProcess;
 
         LOGGER.info("Monitoring prometheus clients: " + prometheusClientManager.getRegisteredClients());
     }
@@ -70,7 +74,7 @@ public class ConfigurationUpdater implements Runnable, Closeable {
 
         LOGGER.info("Reloading prometheus configuration...");
         try {
-            prometheusProcess.reload();
+            reloadPrometheus();
         } catch (Exception e) {
             LOGGER.error("Can't reload prometheus configuration: " + requests, e);
         }
@@ -96,6 +100,21 @@ public class ConfigurationUpdater implements Runnable, Closeable {
         if (!newRequests.isEmpty()) {
             LOGGER.info("Flush memory...!");
             updateConfigurationFile(new ArrayList<>(newRequests));
+        }
+    }
+
+    private static final String PROMETHEUS_RELOAD_URL = "/-/reload";
+
+    private void reloadPrometheus() throws IOException {
+        URL url = new URL(prometheusUrl, PROMETHEUS_RELOAD_URL);
+
+        try {
+            HttpResponse<String> status = Unirest.post(url.toString()).asString();
+            if (status.getStatus() != 200)
+                throw new IOException("Status was not 200, but " + status.getStatus() + ". " +
+                        "Message: " + status.getStatusText() + ". Body: " + status.getBody());
+        } catch (UnirestException e) {
+            throw new IOException(e);
         }
     }
 }
