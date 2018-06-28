@@ -17,7 +17,7 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
 /**
  * Created on 12.03.2018.
  */
-public class PrometheusConfig {
+class PrometheusConfig {
 
     private final Path configFilePath;
 
@@ -32,12 +32,27 @@ public class PrometheusConfig {
 
     @SuppressWarnings("unchecked")
     private List<String> getTargetList(Map<String, Object> root) {
-        Map<String, Object> scrape_configs = (Map<String, Object>) ((List) root.get("scrape_configs")).get(0);
-        Map<String, Object> static_configs = (Map<String, Object>) ((List) (scrape_configs.get("static_configs"))).get(0);
-        return (List<String>) static_configs.get("targets");
+
+        // Traverse the configuration structure and check if the element is there
+        List scrape_configs1 = (List) root.get("scrape_configs");
+        if (scrape_configs1 == null)
+            throw new RuntimeException("Invalid prometheus.yml file! Missing 'scrape_configs'");
+        Map<String, Object> scrape_configs = (Map<String, Object>) scrape_configs1.get(0);
+        if (scrape_configs == null)
+            throw new RuntimeException("Invalid prometheus.yml file! Missing 'scrape_configs'");
+        List staticConfigs = (List) (scrape_configs.get("static_configs"));
+        if (staticConfigs == null)
+            throw new RuntimeException("Invalid prometheus.yml file! Missing 'static_configs'");
+        Map<String, Object> static_configs = (Map<String, Object>) staticConfigs.get(0);
+        if (static_configs == null)
+            throw new RuntimeException("Invalid prometheus.yml file! Missing 'static_configs'");
+        List<String> targets = (List<String>) static_configs.get("targets");
+        if (targets == null)
+            throw new RuntimeException("Invalid prometheus.yml file! Missing 'targets'");
+        return targets;
     }
 
-    public void writeTargets(Collection<PrometheusClient> registeredClients) {
+    void writeTargets(Collection<PrometheusClient> registeredClients) {
         Map<String, Object> configRoot;
         try {
             configRoot = loadConfig();

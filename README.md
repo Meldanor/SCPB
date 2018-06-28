@@ -5,15 +5,19 @@ A simple REST service to register new clients on a prometheus server. Also a pro
 speed cam server.
 
 ## Usage
-`java -jar SCBP.jar [PATH_TO_PROMETHEUS_DIR] [PROMETHEUS_URL] (PORT) `
+`java -jar SCBP.jar PARAMETERS `
 
-+ Path: Path to the prometheus directory
-+ PrometheusUrl: Accessible prometheus URL to reload the configuration. 
-+ Port: The port the REST service listens to
+Possible parameters are:
++ `-pc` or `--prometheus-config`: Path to the prometheus configuration (for example prometheus.yml).
++ `-pu` or `--prometheus-url`: The URL of the prometheus server to access the web hook to reload configuration. 
++ `-p` or `--port`: The port the REST service listens to. Default is 7543.
+
+`-pc` and `-pu` must be both set or otherwise it will create an exception on start. If you do not set any of them, SCPB will run without interacting with a Prometheus server.
 
 ## Requirements
 - Java 8
-- Prometheus 2.X with enabled web management (`--web.enable-lifecycle`) 
+
+Prometheus in 2.X only when SCPB shall update the prometheus.yml file. The server must be started with `--web.enable-lifecycle`.
 
 ## License
 MIT

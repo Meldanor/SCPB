@@ -3,11 +3,11 @@ package de.ovgu.fin.bridge.prometheus;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import de.ovgu.fin.bridge.SCPBParameter;
 import de.ovgu.fin.bridge.data.PrometheusClient;
 import de.ovgu.fin.bridge.data.RegisterPrometheusRequest;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,15 +24,20 @@ import static de.ovgu.fin.bridge.Core.LOGGER;
  */
 public class ConfigurationUpdater implements Runnable, Closeable {
 
-    private final PrometheusConfig prometheusConfig;
-    private final URL prometheusUrl;
+    private PrometheusConfig prometheusConfig;
+    private URL prometheusUrl;
     private final PrometheusClientManager prometheusClientManager;
+
+    private final boolean withoutPrometheus;
 
     private BlockingQueue<RegisterPrometheusRequest> newRequests = new LinkedBlockingQueue<>();
 
-    public ConfigurationUpdater(String configFilePath, URL prometheusUrl) throws IOException {
-        this.prometheusConfig = new PrometheusConfig(new File(configFilePath).toPath());
-        this.prometheusUrl = prometheusUrl;
+    public ConfigurationUpdater(SCPBParameter parameter) throws IOException {
+        this.withoutPrometheus = parameter.withoutPrometheus();
+        if (!withoutPrometheus) {
+            this.prometheusConfig = new PrometheusConfig(parameter.getPrometheusConfiguration().toPath());
+            this.prometheusUrl = parameter.getPrometheusWebUrl();
+        }
         this.prometheusClientManager = new PrometheusClientManager();
 
         LOGGER.info("Monitoring prometheus clients: " + prometheusClientManager.getRegisteredClients());
@@ -70,15 +75,16 @@ public class ConfigurationUpdater implements Runnable, Closeable {
             prometheusClientManager.registerClients(toAddClients);
         }
 
-        prometheusConfig.writeTargets(prometheusClientManager.getRegisteredClients());
-
-        LOGGER.info("Reloading prometheus configuration...");
-        try {
-            reloadPrometheus();
-        } catch (Exception e) {
-            LOGGER.error("Can't reload prometheus configuration: " + requests, e);
+        if (!withoutPrometheus) {
+            prometheusConfig.writeTargets(prometheusClientManager.getRegisteredClients());
+            LOGGER.info("Reloading prometheus configuration...");
+            try {
+                reloadPrometheus();
+            } catch (Exception e) {
+                LOGGER.error("Can't reload prometheus configuration: " + requests, e);
+            }
+            LOGGER.info("Prometheus configuration updated and reloaded!");
         }
-        LOGGER.info("Prometheus configuration updated and reloaded!");
     }
 
     private List<PrometheusClient> toRemoveClients(List<RegisterPrometheusRequest> requests) {
