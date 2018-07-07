@@ -34,6 +34,9 @@ public class PrometheusClient {
     public void setBrIdAndSource(String brId) {
         // delete possible leading br info
         brId = brId.replace("br", "");
+        // Convert file format to normal format (see https://github.com/scionproto/scion/wiki/ISD-and-AS-numbering for
+        // information about it)
+        brId = brId.replace("_", ":");
         setBrId(brId);
 
         // SourceIsdAs is the br id till the second dash '-'
